@@ -1,28 +1,49 @@
-#include <DmxSimple.h>
+#include <Servo.h>
+
+#include <Conceptinetics.h>
+//#include <SoftwareSerial.h>
+
+#define DMX_SLAVE_CHANNELS 5
 
 const int PWM_LED_R = 3;
 const int PWM_LED_G = 5;
 const int PWM_LED_B = 6;
-const int PWM_SRV_P = 7;
+const int PWM_SRV_P = 9;
 const int PWM_SRV_T = 10;
-  
-void setup() {
-  // put your setup code here, to run once:
- 
+const int STATUS_LED = 13;
 
-  Serial.begin(9600);
+
+//SoftwareSerial mySerial(10, 11); // RX, TX
+DMX_Slave dmx_slave(DMX_SLAVE_CHANNELS);
+Servo pan_servo;
+Servo tilt_servo;
+
+void setup() {
+  // Setup DMX
+  dmx_slave.enable ();  
+  dmx_slave.setStartAddress (1);
+  
+  // Setup outputs
+  pinMode(STATUS_LED, OUTPUT);
+  pinMode(PWM_SRV_P, OUTPUT);
+  pinMode(PWM_SRV_T, OUTPUT);
+  
+  // Setup servo's
+  pan_servo.attach(PWM_SRV_P);
+  tilt_servo.attach(PWM_SRV_T);
+
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  Serial.write("Hello world!");
+  int pan, tilt;
   
-  int i = 0;
-  while (1) {
-	analogWrite(PWM_LED_R, i);
-	analogWrite(PWM_LED_G, i + 80);
-	analogWrite(PWM_LED_B, i + 160);
-	i++;
-	delay(10);
-    }
+  analogWrite(PWM_LED_R, dmx_slave.getChannelValue(1));
+  analogWrite(PWM_LED_G, dmx_slave.getChannelValue(2));
+  analogWrite(PWM_LED_B, dmx_slave.getChannelValue(3));
+  
+  pan = map(dmx_slave.getChannelValue(4), 0, 255, 10, 179);     // scale it to use it with the servo (value between 0 and 180)
+  pan_servo.write(pan);
+  
+  tilt = map(dmx_slave.getChannelValue(5), 0, 255, 10, 179);
+  tilt_servo.write(tilt);
 }
