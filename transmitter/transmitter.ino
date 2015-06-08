@@ -11,6 +11,7 @@
 /* To use DmxSimple, you will need the following line. Arduino will
 ** auto-insert it if you select Sketch > Import Library > DmxSimple. */
 
+#define MAX_CHANNELS 512
 
 
 const char ON        = 1;
@@ -20,6 +21,7 @@ const char UP        = 1;
 const char LEFT      = 0;
 const char DOWN      = -1;
 const unsigned char MAX_RANGE  = 255;
+
 
 const char DMX_TX   = 2;
 const char BUTTON_R = 3;
@@ -77,10 +79,11 @@ void setup() {
   ** easily change the number of channels sent here. If you don't
   ** do this, DmxSimple will set the maximum channel number to the
   ** highest channel you DmxSimple.write() to. */
-  DmxSimple.maxChannel(5);
+  DmxSimple.maxChannel(MAX_CHANNELS);
 }
 
 void loop() {
+  /*
   determineDirection(&R_STATUS, &R_DIRECTION);
   determineDirection(&G_STATUS, &G_DIRECTION);
   determineDirection(&B_STATUS, &B_DIRECTION);
@@ -100,9 +103,12 @@ void loop() {
   DmxSimple.write(B_CHAN, B_STATUS);
   DmxSimple.write(PAN_CHAN, PAN_STATUS);
   DmxSimple.write(TILT_CHAN, TILT_STATUS);
+  */
   
-  
-
+  for (int i = 0; i < MAX_CHANNELS; i++)
+  {
+      DmxSimple.write(i, 255);
+  }
 }
 
 void check_button(char button, unsigned char *chan_status, signed char sweep_direction)

@@ -7,9 +7,14 @@
 
 // Micro program ids
 #define SHOW_ADDRESS 1
+#define BESERK 2
+#define FULL_POWER 3
+#define GO_HOME 4
+
 
 
 // Pin constants
+const int DMX_RE    = 2;
 const int PWM_LED_R = 3;
 const int PWM_LED_G = 5;
 const int PWM_LED_B = 6;
@@ -33,10 +38,10 @@ addrlookup addrmap[TABLESIZE]
   {275, 4},
   {391, 2},
   {477, 6},
-  {541, 1},
+  {560, 1},
   {592, 5},
-  {634, 3},
-  {839, 7},
+  {633, 3},
+  {838, 7},
 };
 
 int address;
@@ -57,6 +62,10 @@ void setup()
   // Wait a bit to allow all the caps in the array to charge up, and not have the servo's and LED
   // pull extra current. Poor PSU.
   delay(PU_DELAY);
+  
+  // Setup as receiver
+  pinMode(DMX_RE, OUTPUT);
+  digitalWrite(DMX_RE, LOW);
 
   // Setup led channel outputs
   pinMode(PWM_LED_R, OUTPUT);
@@ -76,9 +85,10 @@ void setup()
   pan_servo.attach(PWM_SRV_P);
   tilt_servo.attach(PWM_SRV_T);
 
+
   // Get the DMX adress of our device
   address = get_address();
-  
+
   // Setup DMX
   dmx_slave.enable();
   dmx_slave.setStartAddress(address);
@@ -86,20 +96,19 @@ void setup()
   // Set servos to their home position
   servos_go_home();
   turn_off_LED();
-  
-  show_address();
 }
 
 /*
 void printval(char* label, int  value)
 {
-    char buf[4];
-    itoa(value, buf, 10);
-    Serial.write(label);
-    Serial.write(buf);
-    Serial.write("\n");
+  char buf[4];
+  itoa(value, buf, 10);
+  Serial.write(label);
+  Serial.write(buf);
+  Serial.write("\n");
 }
 */
+
 void turn_off_LED()
 {
   analogWrite(PWM_LED_R, 0);
@@ -110,9 +119,6 @@ void turn_off_LED()
 
 void loop()
 {
-  show_address();
-  
-  /*
   int pan, tilt;
 
   analogWrite(PWM_LED_R, dmx_slave.getChannelValue(1));
@@ -130,7 +136,17 @@ void loop()
     case SHOW_ADDRESS:
       show_address();
       break;
-  }*/
+    case BESERK:
+      beserk();
+      break;
+    case FULL_POWER:
+      full_power();
+      break;    
+    case GO_HOME:
+      servos_go_home();
+      turn_off_LED();
+      break;      
+  }
 }
 
 /**
@@ -139,7 +155,7 @@ void loop()
 void show_address()
 {
 
-  analogWrite(PWM_LED_B, 255);  
+  analogWrite(PWM_LED_B, 255);
   delay(1000);
   turn_off_LED();
   delay(500);
@@ -155,8 +171,48 @@ void show_address()
     delay(500);
   }
   turn_off_LED();
-  analogWrite(PWM_LED_B, 255);  
+  analogWrite(PWM_LED_B, 255);
   delay(1000);
+  turn_off_LED();
+}
+
+void full_power()
+{
+    analogWrite(PWM_LED_R, 255);
+    analogWrite(PWM_LED_G, 255);
+    analogWrite(PWM_LED_B, 255);
+}
+
+void beserk()
+{
+  int i;
+  int pan, tilt;
+
+  for (i = 0; i < 256; i++) {
+    analogWrite(PWM_LED_R, i);
+    analogWrite(PWM_LED_G, i);
+    analogWrite(PWM_LED_B, i);
+
+    pan = map(i, 0, 255, 10, 179);     // scale it to use it with the servo (value between 0 and 180)
+    pan_servo.write(pan);
+
+    tilt = map(i, 0, 255, 10, 179);
+    tilt_servo.write(tilt);
+    delay(5);
+  }
+
+  for (i = 255; i >= 0; i--) {
+    analogWrite(PWM_LED_R, i);
+    analogWrite(PWM_LED_G, i);
+    analogWrite(PWM_LED_B, i);
+
+    pan = map(i, 0, 255, 10, 179);     // scale it to use it with the servo (value between 0 and 180)
+    pan_servo.write(pan);
+
+    tilt = map(i, 0, 255, 10, 179);
+    tilt_servo.write(tilt);
+    delay(5);
+  }
 }
 
 /**
