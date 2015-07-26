@@ -20,6 +20,7 @@ addrlookup addrmap[TABLESIZE]
   {839, 7},
 };
 
+
 void setup() {
   Serial.begin(9600);
   pinMode(UADDRTRIP, INPUT);
@@ -29,6 +30,9 @@ void setup() {
 
 void loop() {
   printval("Address: ", get_address());
+  printval("H: ", analogRead(UADDRTRIP));
+  printval("M: ", analogRead(MADDRTRIP));
+  printval("L: ", analogRead(LADDRTRIP));
 }
 
 unsigned int get_address()
