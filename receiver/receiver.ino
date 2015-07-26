@@ -4,10 +4,12 @@
 
 #define DMX_SLAVE_CHANNELS 6
 #define PU_DELAY 250
+#define BIT_DELAY_ON 400
+#define BIT_DELAY_OFF 150
 
 // Micro program ids
 #define SHOW_ADDRESS 1
-#define BESERK 2
+#define BEZERK 2
 #define FULL_POWER 3
 #define GO_HOME 4
 
@@ -23,6 +25,7 @@ const int PWM_SRV_T = 10;
 const int UADDRTRIP = 14;
 const int MADDRTRIP = 15;
 const int LADDRTRIP = 16;
+const float V_DROP_CORRECTION = 1.075268817;
 
 // Addressing init section
 const int TABLESIZE = 8;
@@ -38,11 +41,25 @@ addrlookup addrmap[TABLESIZE]
   {275, 4},
   {391, 2},
   {477, 6},
-  {560, 1},
+  {541, 1},
   {592, 5},
-  {633, 3},
-  {838, 7},
+  {634, 3},
+  {839, 7},
 };
+
+/*
+addrlookup addrmap[TABLESIZE]
+{
+  {10, 0},
+  {295, 4},
+  {420, 2},
+  {513, 6},
+  {582, 1},
+  {636, 5},
+  {681, 3},
+  {902, 7},
+};
+*/
 
 int address;
 
@@ -88,6 +105,7 @@ void setup()
 
   // Get the DMX adress of our device
   address = get_address();
+  //address = 1;
 
   // Setup DMX
   dmx_slave.enable();
@@ -96,7 +114,21 @@ void setup()
   // Set servos to their home position
   servos_go_home();
   turn_off_LED();
+  
+  show_address();
+  
+  
+  
+  /*
+  while (1)
+  {
+    bezerk();
+  }
+  */
+  
+    
 }
+
 
 /*
 void printval(char* label, int  value)
@@ -114,6 +146,13 @@ void turn_off_LED()
   analogWrite(PWM_LED_R, 0);
   analogWrite(PWM_LED_G, 0);
   analogWrite(PWM_LED_B, 0);
+}
+
+void turn_on_LED()
+{
+  analogWrite(PWM_LED_R, 255);
+  analogWrite(PWM_LED_G, 255);
+  analogWrite(PWM_LED_B, 255);
 }
 
 
@@ -136,8 +175,8 @@ void loop()
     case SHOW_ADDRESS:
       show_address();
       break;
-    case BESERK:
-      beserk();
+    case BEZERK:
+      bezerk();
       break;
     case FULL_POWER:
       full_power();
@@ -158,7 +197,7 @@ void show_address()
   analogWrite(PWM_LED_B, 255);
   delay(1000);
   turn_off_LED();
-  delay(500);
+  delay(BIT_DELAY_OFF);
   int bitmask = 256;
   for (int i = 0; i < 9; i++) {
     if ((address & (bitmask >> i)) == (bitmask >> i)) {
@@ -166,9 +205,10 @@ void show_address()
     } else {
       analogWrite(PWM_LED_R, 255);
     }
-    delay(500);
+    
+    delay(BIT_DELAY_ON);
     turn_off_LED();
-    delay(500);
+    delay(BIT_DELAY_OFF);
   }
   turn_off_LED();
   analogWrite(PWM_LED_B, 255);
@@ -183,7 +223,7 @@ void full_power()
     analogWrite(PWM_LED_B, 255);
 }
 
-void beserk()
+void bezerk()
 {
   int i;
   int pan, tilt;
@@ -212,7 +252,7 @@ void beserk()
     tilt = map(i, 0, 255, 10, 179);
     tilt_servo.write(tilt);
     delay(5);
-  }
+  }      
 }
 
 /**
@@ -240,9 +280,18 @@ unsigned int get_address()
   return address;
 }
 
+/**
+* This function takes the analog value of the specified pin and multiplies it by 
+* the VDROP correction. The reason for this is that the valuemap is comptuted with
+* the pro-mini connected with a FTDI cable to USB. This yield a difference in the reference
+* Voltage as when the pro mini is connected by the board's power supply. Therefore the input
+* needs to be devided by a constant that corrects for the voltage difference between the PRO mini's supply
+* and the board's supply.
+* 
+*/
 int binread_triplet(int pin)
 {
-  int analog_value = analogRead(pin);
+  int analog_value = analogRead(pin) / V_DROP_CORRECTION;
   for (int i = 0; i < TABLESIZE; i++) {
     if (analog_value < addrmap[i].limit) return addrmap[i].address;
   }
