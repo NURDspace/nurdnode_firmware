@@ -22,6 +22,7 @@ const int PWM_LED_G = 5;
 const int PWM_LED_B = 6;
 const int PWM_SRV_P = 9;
 const int PWM_SRV_T = 10;
+const int EXT1      = 13;
 const int UADDRTRIP = 14;
 const int MADDRTRIP = 15;
 const int LADDRTRIP = 16;
@@ -62,6 +63,7 @@ addrlookup addrmap[TABLESIZE]
 */
 
 int address;
+int mode;
 
 // Init dmx_slave
 DMX_Slave dmx_slave(DMX_SLAVE_CHANNELS);
@@ -98,6 +100,10 @@ void setup()
   pinMode(MADDRTRIP, INPUT);
   pinMode(LADDRTRIP, INPUT);
 
+  // mode setting
+  pinMode(EXT1, INPUT);
+  mode = digitalRead(EXT1);
+
   // Setup servo's
   pan_servo.attach(PWM_SRV_P);
   tilt_servo.attach(PWM_SRV_T);
@@ -117,16 +123,6 @@ void setup()
   
   show_address();
   
-  
-  
-  /*
-  while (1)
-  {
-    bezerk();
-  }
-  */
-  
-    
 }
 
 
@@ -158,6 +154,14 @@ void turn_on_LED()
 
 void loop()
 {
+  if (mode)
+    dmx_mode();
+  else
+    autonomic_mode();
+}
+
+void dmx_mode()
+{
   int pan, tilt;
 
   analogWrite(PWM_LED_R, dmx_slave.getChannelValue(1));
@@ -186,6 +190,11 @@ void loop()
       turn_off_LED();
       break;      
   }
+}
+
+void autonomic_mode()
+{
+  bezerk();
 }
 
 /**
