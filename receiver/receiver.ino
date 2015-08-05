@@ -14,6 +14,9 @@
 #define GO_HOME 4
 
 
+//Macros
+#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
+
 
 // Pin constants
 const int DMX_RE    = 2;
@@ -111,31 +114,19 @@ void setup()
 
   // Get the DMX adress of our device
   address = get_address();
-  //address = 1;
-
-  // Setup DMX
-  dmx_slave.enable();
-  dmx_slave.setStartAddress(address);
 
   // Set servos to their home position
   servos_go_home();
   turn_off_LED();
-  
-  show_address();
+
+  // Setup DMX
+  if (mode == false) {
+    dmx_slave.enable();
+    dmx_slave.setStartAddress(address);
+    show_address();
+  }
   
 }
-
-
-/*
-void printval(char* label, int  value)
-{
-  char buf[4];
-  itoa(value, buf, 10);
-  Serial.write(label);
-  Serial.write(buf);
-  Serial.write("\n");
-}
-*/
 
 void turn_off_LED()
 {
@@ -155,9 +146,9 @@ void turn_on_LED()
 void loop()
 {
   if (mode)
-    dmx_mode();
-  else
     autonomic_mode();
+  else
+    dmx_mode();
 }
 
 void dmx_mode()
@@ -168,7 +159,7 @@ void dmx_mode()
   analogWrite(PWM_LED_G, dmx_slave.getChannelValue(2));
   analogWrite(PWM_LED_B, dmx_slave.getChannelValue(3));
 
-  pan = map(dmx_slave.getChannelValue(4), 0, 255, 10, 179);     // scale it to use it with the servo (value between 0 and 180)
+  pan = map(dmx_slave.getChannelValue(4), 0, 255, 10, 179);
   pan_servo.write(pan);
 
   tilt = map(dmx_slave.getChannelValue(5), 0, 255, 10, 179);
@@ -194,7 +185,10 @@ void dmx_mode()
 
 void autonomic_mode()
 {
-  bezerk();
+  if (CHECK_BIT(address,0))
+    bezerk();
+  if (CHECK_BIT(address,1))
+    full_power();
 }
 
 /**
@@ -242,7 +236,7 @@ void bezerk()
     analogWrite(PWM_LED_G, i);
     analogWrite(PWM_LED_B, i);
 
-    pan = map(i, 0, 255, 10, 179);     // scale it to use it with the servo (value between 0 and 180)
+    pan = map(i, 0, 255, 10, 179);
     pan_servo.write(pan);
 
     tilt = map(i, 0, 255, 10, 179);
@@ -255,7 +249,7 @@ void bezerk()
     analogWrite(PWM_LED_G, i);
     analogWrite(PWM_LED_B, i);
 
-    pan = map(i, 0, 255, 10, 179);     // scale it to use it with the servo (value between 0 and 180)
+    pan = map(i, 0, 255, 10, 179);
     pan_servo.write(pan);
 
     tilt = map(i, 0, 255, 10, 179);
