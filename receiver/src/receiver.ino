@@ -3,8 +3,9 @@
 #include <Conceptinetics.h>
 #include <Timer.h>
 
-//                87654321
-//#define _ADDRESS B11111110
+//                 Dipswitch numbering
+//                        9           87654321
+//#define _ADDRESS (B00000001 * 256) + B11111111
 
 #define DMX_SLAVE_CHANNELS 6
 #define PU_DELAY 250
@@ -24,17 +25,22 @@ Timer t;
 int timer2_counter;
 
 // Pin constants
-const int DMX_RE    = 2;
-const int PWM_LED_R = 3;
-const int PWM_LED_G = 5;
-const int PWM_LED_B = 6;
-const int PWM_SRV_P = 9;
-const int PWM_SRV_T = 10;
-const int UADDRTRIP = 14;
-const int MADDRTRIP = 15;
-const int LADDRTRIP = 16;
-const int EXT1      = 17;
+const int DMX_RE    = 2;  //D2
+const int PWM_LED_R = 3;  //D3
+const int PWM_LED_G = 5;  //D4
+const int PWM_LED_B = 6;  //D5
+const int PWM_SRV_P = 9;  //D6
+const int PWM_SRV_T = 10; //D10
+const int UADDRTRIP = 14; //A0
+const int MADDRTRIP = 15; //A1
+const int LADDRTRIP = 16; //A2
+const int EXT1      = 17; //A3
 const float V_DROP_CORRECTION = 1.075268817;
+
+int R;
+int B;
+int G;
+int loop_dir;
 
 // Addressing init section
 const int TABLESIZE = 8;
@@ -55,20 +61,6 @@ addrlookup addrmap[TABLESIZE]
   {634, 3},
   {839, 7},
 };
-
-/*
-addrlookup addrmap[TABLESIZE]
-{
-  {10, 0},
-  {295, 4},
-  {420, 2},
-  {513, 6},
-  {582, 1},
-  {636, 5},
-  {681, 3},
-  {902, 7},
-};
-*/
 
 int address;
 int mode;
@@ -122,7 +114,7 @@ void setup()
 
   // Set debug address if needed 
   #ifdef _ADDRESS
-  address = _ADDRESS;
+  address = _ADDRESS; 
   #endif
 
   // Set servos to their home position
@@ -141,7 +133,8 @@ void setup()
     noInterrupts();
     TCCR2A = 0;
     TCCR2B = 0;
-    timer2_counter = 34286;
+    //timer2_counter = 34286;
+    timer2_counter = 15624;
     TCNT2 = timer2_counter;
     TCCR2B |= (1 << CS12);
     TIMSK2 |= (1 << TOIE2);
@@ -203,12 +196,26 @@ void dmx_mode()
   }
 }
 
+/**
+* Autonomic mode
+*/
 void autonomic_mode()
 {
+  // Test mode
+  if (address == 511) {
+    full_power();
+    return;
+  }
+
+  if (CHECK_BIT(address,3))
+    t.every(50, led_color_strobe);
+  if (CHECK_BIT(address,2))
+    t.every(50, led_color_loop);
   if (CHECK_BIT(address,1))
-    t.every(500, led_color_random);
+    t.every(1000, led_color_random);
   if (CHECK_BIT(address,0))
     bezerk(0);
+  delay(5);
 }
 
 /**
@@ -251,6 +258,36 @@ void led_color_random()
   analogWrite(PWM_LED_R, random(255));
   analogWrite(PWM_LED_G, random(255));
   analogWrite(PWM_LED_B, random(255));
+}
+
+void led_color_loop()
+{
+  if (R == 255) loop_dir = 0;
+  if (R == 0) loop_dir = 1;
+ 
+  if (loop_dir) {
+    R = R + 1;
+    G = G + 1;
+    B = B + 1;
+  } 
+  else 
+  {
+    R = R - 1;
+    G = G - 1;
+    B = B - 1;
+  } 
+  analogWrite(PWM_LED_R, R);
+  analogWrite(PWM_LED_G, G);
+  analogWrite(PWM_LED_B, B);
+}
+
+void led_color_strobe()
+{
+  if (R == 255) R = 0;
+  else R = 255;
+  analogWrite(PWM_LED_R, R);
+  analogWrite(PWM_LED_G, R);
+  analogWrite(PWM_LED_B, R);
 }
 
 void bezerk(int mode)
