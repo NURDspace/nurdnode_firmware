@@ -2,6 +2,8 @@
 #include <Servo.h>
 #include <Conceptinetics.h>
 
+//#define _ADDRESS B11111110
+
 #define DMX_SLAVE_CHANNELS 6
 #define PU_DELAY 250
 #define BIT_DELAY_ON 400
@@ -12,7 +14,6 @@
 #define BEZERK 2
 #define FULL_POWER 3
 #define GO_HOME 4
-
 
 //Macros
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
@@ -25,7 +26,7 @@ const int PWM_LED_G = 5;
 const int PWM_LED_B = 6;
 const int PWM_SRV_P = 9;
 const int PWM_SRV_T = 10;
-const int EXT1      = 13;
+const int EXT1      = 17;
 const int UADDRTRIP = 14;
 const int MADDRTRIP = 15;
 const int LADDRTRIP = 16;
@@ -79,6 +80,7 @@ Servo tilt_servo;
 int pan_home = 128;
 int tilt_home = 128;
 
+
 void setup()
 {
   // Wait a bit to allow all the caps in the array to charge up, and not have the servo's and LED
@@ -111,16 +113,19 @@ void setup()
   pan_servo.attach(PWM_SRV_P);
   tilt_servo.attach(PWM_SRV_T);
 
-
   // Get the DMX adress of our device
   address = get_address();
+  #ifdef _ADDRESS
+  //Set debug address if needed 
+  address = _ADDRESS;
+  #endif
 
   // Set servos to their home position
   servos_go_home();
   turn_off_LED();
 
   // Setup DMX
-  if (mode == false) {
+  if (mode == 0) {
     dmx_slave.enable();
     dmx_slave.setStartAddress(address);
     show_address();
