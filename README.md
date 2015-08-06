@@ -9,6 +9,11 @@ Switch 10 switches between Autonomic mode and DMX mode
 * On Autonomic
 * Off DMX
 
+The + and - Positions of the dip switches both enable the dipswitch
+* - == 1
+* + == 1
+* center == 0
+
 ## Autonomic mode
 Switch        | Function
 ------------- | -------------
