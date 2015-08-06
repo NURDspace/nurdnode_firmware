@@ -1,0 +1,3 @@
+[submodule "receiver/lib/Timer"]
+	path = receiver/lib/Timer
+	url = https://github.com/JChristensen/Timer.git
