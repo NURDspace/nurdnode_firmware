@@ -1,7 +1,9 @@
 #include "FastLED.h"
 #include <Servo.h>
 #include <Conceptinetics.h>
+#include <Timer.h>
 
+//                87654321
 //#define _ADDRESS B11111110
 
 #define DMX_SLAVE_CHANNELS 6
@@ -18,6 +20,8 @@
 //Macros
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
+Timer t;
+int timer2_counter;
 
 // Pin constants
 const int DMX_RE    = 2;
@@ -26,10 +30,10 @@ const int PWM_LED_G = 5;
 const int PWM_LED_B = 6;
 const int PWM_SRV_P = 9;
 const int PWM_SRV_T = 10;
-const int EXT1      = 17;
 const int UADDRTRIP = 14;
 const int MADDRTRIP = 15;
 const int LADDRTRIP = 16;
+const int EXT1      = 17;
 const float V_DROP_CORRECTION = 1.075268817;
 
 // Addressing init section
@@ -115,8 +119,9 @@ void setup()
 
   // Get the DMX adress of our device
   address = get_address();
+
+  // Set debug address if needed 
   #ifdef _ADDRESS
-  //Set debug address if needed 
   address = _ADDRESS;
   #endif
 
@@ -130,7 +135,18 @@ void setup()
     dmx_slave.setStartAddress(address);
     show_address();
   }
-  
+  else
+  {
+    // Setup the timer for doing things while the servo's are running 
+    noInterrupts();
+    TCCR2A = 0;
+    TCCR2B = 0;
+    timer2_counter = 34286;
+    TCNT2 = timer2_counter;
+    TCCR2B |= (1 << CS12);
+    TIMSK2 |= (1 << TOIE2);
+    interrupts();
+  }
 }
 
 void turn_off_LED()
@@ -146,7 +162,6 @@ void turn_on_LED()
   analogWrite(PWM_LED_G, 255);
   analogWrite(PWM_LED_B, 255);
 }
-
 
 void loop()
 {
@@ -176,7 +191,7 @@ void dmx_mode()
       show_address();
       break;
     case BEZERK:
-      bezerk();
+      bezerk(1);
       break;
     case FULL_POWER:
       full_power();
@@ -190,10 +205,10 @@ void dmx_mode()
 
 void autonomic_mode()
 {
-  if (CHECK_BIT(address,0))
-    bezerk();
   if (CHECK_BIT(address,1))
-    full_power();
+    t.every(500, led_color_random);
+  if (CHECK_BIT(address,0))
+    bezerk(0);
 }
 
 /**
@@ -231,15 +246,24 @@ void full_power()
     analogWrite(PWM_LED_B, 255);
 }
 
-void bezerk()
+void led_color_random()
+{
+  analogWrite(PWM_LED_R, random(255));
+  analogWrite(PWM_LED_G, random(255));
+  analogWrite(PWM_LED_B, random(255));
+}
+
+void bezerk(int mode)
 {
   int i;
   int pan, tilt;
 
   for (i = 0; i < 256; i++) {
-    analogWrite(PWM_LED_R, i);
-    analogWrite(PWM_LED_G, i);
-    analogWrite(PWM_LED_B, i);
+    if (mode) {
+      analogWrite(PWM_LED_R, i);
+      analogWrite(PWM_LED_G, i);
+      analogWrite(PWM_LED_B, i);
+    }
 
     pan = map(i, 0, 255, 10, 179);
     pan_servo.write(pan);
@@ -250,9 +274,11 @@ void bezerk()
   }
 
   for (i = 255; i >= 0; i--) {
-    analogWrite(PWM_LED_R, i);
-    analogWrite(PWM_LED_G, i);
-    analogWrite(PWM_LED_B, i);
+    if (mode) {
+      analogWrite(PWM_LED_R, i);
+      analogWrite(PWM_LED_G, i);
+      analogWrite(PWM_LED_B, i);
+    }
 
     pan = map(i, 0, 255, 10, 179);
     pan_servo.write(pan);
@@ -303,4 +329,10 @@ int binread_triplet(int pin)
   for (int i = 0; i < TABLESIZE; i++) {
     if (analog_value < addrmap[i].limit) return addrmap[i].address;
   }
+}
+
+ISR(TIMER2_OVF_vect)
+{
+  TCNT2 = timer2_counter;
+  t.update();
 }
