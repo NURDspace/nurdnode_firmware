@@ -1,4 +1,3 @@
-#include "FastLED.h"
 #include <Servo.h>
 #include <Conceptinetics.h>
 #include <Timer.h>
@@ -102,8 +101,10 @@ void setup()
   pinMode(LADDRTRIP, INPUT);
 
   // mode setting
-  pinMode(EXT1, INPUT);
-  mode = digitalRead(EXT1);
+  //pinMode(EXT1, INPUT);
+  //mode = digitalRead(EXT1);
+  if (analogRead(EXT1) == 255) mode = 1;
+  else mode = 0;
 
   // Setup servo's
   pan_servo.attach(PWM_SRV_P);
