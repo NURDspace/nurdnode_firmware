@@ -103,7 +103,7 @@ void setup()
   // mode setting
   //pinMode(EXT1, INPUT);
   //mode = digitalRead(EXT1);
-  if (analogRead(EXT1) == 255) mode = 1;
+  if (analogRead(EXT1) >= 1000) mode = 1;
   else mode = 0;
 
   // Setup servo's
